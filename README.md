@@ -16,8 +16,8 @@ El objetivo de **Kanbam** fue construir una aplicación completa y lista para us
 
 - **Mantener el DOM sincronizado sin framework ni Virtual DOM:** toda la lógica de datos vive en un `store` propio con patrón *Observer / Pub-Sub* (`store.subscribe`). Cada cambio en las tareas persiste en `localStorage` y dispara un re-render limpio del tablero, evitando contadores o columnas desactualizadas.
 - **No perder el foco al buscar en tiempo real:** al no tener reconciliación de Virtual DOM, re-renderizar toda la página al escribir destruiría el `<input>` de búsqueda. Para resolverlo, `Toolbar` y los modales se montan una sola vez y actualizan su estado mediante `sync()`, mientras que solo `Board` se re-renderiza de forma declarativa.
-- **Protección contra datos corruptos en `localStorage` e importación JSON:** en lugar de confiar en un `JSON.parse(...) as BoardState`, los datos externos se reciben como `unknown` y pasan por *Type Guards* (`isValidBoardState`) que verifican versión, tema y cada campo de cada tarjeta. Si el almacenamiento fue alterado o el archivo es inválido, la app no se rompe.
-- **Prevención de XSS al renderizar texto del usuario:** todas las cadenas ingresadas por el usuario pasan por `escapeHtml()` antes de montarse con `<template>` (`htmlToElement`), evitando inyección de HTML/JavaScript.
+- **Protección contra datos corruptos en `localStorage` e importación JSON:** en lugar de confiar en un `JSON.parse(...) as BoardState`, los datos externos se reciben como `unknown` y pasan por *Type Guards* (`isBoardState`, `isPersistedBoardEnvelope`) y migraciones de esquema que verifican versión y cada campo de cada tarjeta. Si el almacenamiento fue alterado o el archivo es inválido, la app no se rompe.
+- **Prevención de XSS al renderizar texto del usuario:** el texto del usuario nunca se interpola en HTML: las tarjetas y columnas se construyen con APIs del DOM (`textContent`), y `htmlToElement` solo se usa con plantillas estáticas.
 - **Drag & Drop nativo preciso (incluso con filtros activos):** la lógica en `dnd.ts` usa delegación de eventos sobre el contenedor del tablero (se registra una sola vez) y calcula la posición real de inserción en la columna destino, además de ofrecer cambio de columna desde *Editar* para dispositivos táctiles.
 - **Accesibilidad y detalles de UI/UX:** navegación por teclado (`N` para nueva tarjeta, `Escape` para cerrar modales, `:focus-visible`), uso de `inert` y `aria-hidden` en modales animados, soporte para `prefers-reduced-motion`, notificaciones Toast (`role="status"`, `aria-live="polite"`) en lugar de `alert()` bloqueantes y diseño responsive probado desde `320px`.
 
@@ -33,24 +33,18 @@ El objetivo de **Kanbam** fue construir una aplicación completa y lista para us
 
 ```text
 src/
-├── core/
-│   ├── types.ts        # Tipos del dominio (Task, ColumnId, Priority, BoardState, BoardFilters)
-│   ├── storage.ts      # Persistencia en localStorage, datos demo y validación con Type Guards
-│   └── store.ts        # Estado centralizado con suscripciones (Pub/Sub)
-├── components/
-│   ├── Toolbar.ts      # Buscador, filtros, tema y exportar/importar JSON
-│   ├── Board.ts        # Renderizado declarativo de columnas
-│   ├── Column.ts       # Columna individual, contador y estado vacío
-│   ├── TaskCard.ts     # Tarjeta con badges y acciones
-│   ├── TaskModal.ts    # Modales animados para crear/editar y confirmar borrado
-│   └── Toast.ts        # Avisos accesibles en pantalla
-├── utils/
-│   ├── dom.ts          # escapeHtml (seguridad XSS) y htmlToElement (<template>)
-│   └── dnd.ts          # Delegación de eventos para HTML5 Drag & Drop
-├── App.ts              # Raíz de la aplicación, suscripción al store y atajos de teclado
-├── main.ts             # Punto de entrada
-└── style.css           # Variables CSS, CSS Nesting nativo y diseño responsive
+├── domain/              # Núcleo puro (sin imports de otras capas): tipos, validación, fechas, operaciones inmutables con Result
+├── application/         # Casos de uso: store (Pub/Sub), filtros y puertos (BoardPersistence, ThemePersistence, BoardSerializer)
+├── infrastructure/      # Adaptadores: repositorio localStorage, migraciones de esquema, guards, import/export JSON, seed
+├── ui/
+│   ├── components/      # Toolbar, Board, Column, TaskCard, TaskModal, Toast
+│   ├── utils/           # dom.ts (plantillas estáticas), dnd.ts (Drag & Drop), tags.ts
+│   ├── App.ts           # Raíz de la UI, suscripción al store y atajos de teclado
+│   └── style.css        # Variables CSS, CSS Nesting nativo y diseño responsive
+└── main.ts              # Composition root: conecta infraestructura con la aplicación y monta la UI
 ```
+
+Regla de dependencias: `domain` no importa nada; `application` solo importa `domain` y recibe la persistencia por puertos inyectados; `ui` importa `application` y tipos de `domain`; únicamente `main.ts` conoce las implementaciones concretas de `infrastructure`.
 
 ## Stack
 

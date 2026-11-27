@@ -2,10 +2,10 @@ import { Board } from './components/Board.ts';
 import { createConfirmModal, createTaskModal } from './components/TaskModal.ts';
 import { createToast } from './components/Toast.ts';
 import { Toolbar } from './components/Toolbar.ts';
-import { store } from './core/store.ts';
-import type { Task } from './core/types.ts';
+import type { BoardStore } from '../application/index.ts';
+import type { Task } from '../domain/index.ts';
 import { setupBoardDnd } from './utils/dnd.ts';
-import { htmlToElement } from './utils/dom.ts';
+import { htmlToElement, requireElement } from './utils/dom.ts';
 
 function isTypingInField(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -13,23 +13,24 @@ function isTypingInField(target: EventTarget | null): boolean {
   return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable;
 }
 
-export function App(): HTMLElement {
+export function App(store: BoardStore): HTMLElement {
   const shell = htmlToElement(`
     <div class="app-shell">
       <div data-slot="board"></div>
     </div>
   `);
 
-  const boardContainer = shell.querySelector<HTMLDivElement>('[data-slot="board"]')!;
-  setupBoardDnd(boardContainer);
-
   const toast = createToast();
+  const boardContainer = requireElement<HTMLDivElement>(shell, '[data-slot="board"]');
+  setupBoardDnd(boardContainer, store, (message) => toast.show(message, 'error'));
+
   const confirmModal = createConfirmModal();
-  const taskModal = createTaskModal((mode) => {
-    toast.show(
-      mode === 'create' ? 'Tarjeta creada.' : 'Cambios guardados.',
-      'success',
-    );
+  const taskModal = createTaskModal({
+    store,
+    onSaved: (mode) => {
+      toast.show(mode === 'create' ? 'Tarjeta creada.' : 'Cambios guardados.', 'success');
+    },
+    onWarning: (message) => toast.show(message, 'error'),
   });
 
   const handleRequestResetDemo = () => {
@@ -38,13 +39,18 @@ export function App(): HTMLElement {
       message: 'Se reemplazarán las tarjetas actuales por las de ejemplo.',
       confirmText: 'Restaurar',
       onConfirm: () => {
-        store.resetDemo();
-        toast.show('Demo restaurada.', 'info');
+        const result = store.resetDemo();
+        if (result.ok) {
+          toast.show('Demo restaurada.', 'info');
+        } else {
+          toast.show(result.error.message, 'error');
+        }
       },
     });
   };
 
   const toolbar = Toolbar({
+    store,
     onNewTask: () => taskModal.openCreate(),
     onRequestResetDemo: handleRequestResetDemo,
     onNotify: (message, type) => toast.show(message, type),
@@ -63,17 +69,22 @@ export function App(): HTMLElement {
       message: `¿Seguro que quieres eliminar "${task.title}"?`,
       confirmText: 'Eliminar',
       onConfirm: () => {
-        store.deleteTask(task.id);
-        toast.show('Tarjeta eliminada.', 'info');
+        const result = store.deleteTask(task.id);
+        if (result.ok) {
+          toast.show('Tarjeta eliminada.', 'info');
+        } else {
+          toast.show(result.error.message, 'error');
+        }
       },
     });
   };
 
   const render = () => {
-    document.documentElement.dataset.theme = store.getState().theme;
+    document.documentElement.dataset.theme = store.getTheme();
     toolbar.sync();
     boardContainer.replaceChildren(
       Board({
+        store,
         onEditTask: handleEdit,
         onDeleteTask: handleDelete,
       }),
@@ -107,6 +118,11 @@ export function App(): HTMLElement {
 
   store.subscribe(render);
   render();
+
+  const startupWarning = store.getStartupWarning();
+  if (startupWarning !== undefined) {
+    toast.show(startupWarning, 'error');
+  }
 
   return shell;
 }

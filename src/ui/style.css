@@ -440,8 +440,8 @@ textarea:focus-visible {
   transition: border-color var(--transition), background-color var(--transition);
 
   &[data-column-id='todo'] .column-dot { background-color: var(--dot-todo); }
-  &[data-column-id='in-progress'] .column-dot { background-color: var(--dot-progress); }
-  &[data-column-id='in-review'] .column-dot { background-color: var(--dot-review); }
+  &[data-column-id='in_progress'] .column-dot { background-color: var(--dot-progress); }
+  &[data-column-id='in_review'] .column-dot { background-color: var(--dot-review); }
   &[data-column-id='done'] .column-dot { background-color: var(--dot-done); }
 
   &.drag-over {

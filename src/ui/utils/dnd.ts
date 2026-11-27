@@ -1,5 +1,5 @@
-import { store } from '../core/store.ts';
-import type { ColumnId } from '../core/types.ts';
+import type { BoardStore } from '../../application/index.ts';
+import { isValidColumnId } from '../../domain/index.ts';
 
 function getCardAfterPointer(list: HTMLElement, clientY: number): HTMLElement | null {
   const cards = Array.from(
@@ -17,7 +17,11 @@ function getCardAfterPointer(list: HTMLElement, clientY: number): HTMLElement | 
   return null;
 }
 
-export function setupBoardDnd(container: HTMLElement): void {
+export function setupBoardDnd(
+  container: HTMLElement,
+  store: BoardStore,
+  onError: (message: string) => void,
+): void {
   let draggedTaskId: string | null = null;
 
   const indicator = document.createElement('div');
@@ -88,8 +92,8 @@ export function setupBoardDnd(container: HTMLElement): void {
     if (!column) return;
 
     // evita quitar la clase al pasar por hijos internos
-    const related = event.relatedTarget as Node | null;
-    if (!column.contains(related)) {
+    const related = event.relatedTarget;
+    if (!(related instanceof Node) || !column.contains(related)) {
       column.classList.remove('drag-over');
       if (column.contains(indicator)) {
         indicator.remove();
@@ -103,8 +107,8 @@ export function setupBoardDnd(container: HTMLElement): void {
 
     const column = target.closest<HTMLElement>('.column');
     const list = column?.querySelector<HTMLElement>('.column-list');
-    const targetColumn = column?.dataset.columnId as ColumnId | undefined;
-    if (!column || !list || !targetColumn) return;
+    const targetColumn = column?.dataset.columnId;
+    if (!column || !list || !targetColumn || !isValidColumnId(targetColumn)) return;
 
     event.preventDefault();
 
@@ -118,7 +122,7 @@ export function setupBoardDnd(container: HTMLElement): void {
     const afterTaskId = afterCard?.dataset.taskId;
 
     const remainingInCol = store
-      .getTasksByColumn(targetColumn)
+      .getColumnTasks(targetColumn)
       .filter((t) => t.id !== taskId);
 
     const targetIndex = afterTaskId
@@ -128,11 +132,12 @@ export function setupBoardDnd(container: HTMLElement): void {
     clearVisualState();
     draggedTaskId = null;
 
-    store.moveTask(
+    const moved = store.moveTask(
       taskId,
       targetColumn,
       targetIndex === -1 ? remainingInCol.length : targetIndex,
     );
+    if (!moved.ok) onError(moved.error.message);
   });
 
   container.addEventListener('dragend', () => {
