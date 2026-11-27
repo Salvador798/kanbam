@@ -1,3 +1,4 @@
+import { createDebounced } from '../../application/index.ts';
 import type { BoardStore } from '../../application/index.ts';
 import { PRIORITIES, PRIORITY_LABELS, isValidPriority } from '../../domain/index.ts';
 import { appendOptions, htmlToElement, requireElement } from '../utils/dom.ts';
@@ -15,6 +16,8 @@ export interface ToolbarHandle {
   element: HTMLElement;
   sync: () => void;
 }
+
+const SEARCH_DEBOUNCE_MS = 250;
 
 export function Toolbar({
   store,
@@ -52,6 +55,8 @@ export function Toolbar({
         <button class="btn btn-primary" type="button" data-action="new-task" title="Atajo: tecla N">
           + Nueva tarjeta
         </button>
+        <button class="btn" type="button" data-action="undo" disabled>Deshacer</button>
+        <button class="btn" type="button" data-action="redo" disabled>Rehacer</button>
         <button class="btn" type="button" data-action="export">Exportar</button>
         <button class="btn" type="button" data-action="import">Importar</button>
         <button class="btn" type="button" data-action="reset-demo">Restaurar demo</button>
@@ -68,6 +73,8 @@ export function Toolbar({
   const labelSelect = requireElement<HTMLSelectElement>(header, '[data-role="label"]');
   const clearFiltersBtn = requireElement<HTMLButtonElement>(header, '[data-action="clear-filters"]');
   const newTaskBtn = requireElement<HTMLButtonElement>(header, '[data-action="new-task"]');
+  const undoBtn = requireElement<HTMLButtonElement>(header, '[data-action="undo"]');
+  const redoBtn = requireElement<HTMLButtonElement>(header, '[data-action="redo"]');
   const exportBtn = requireElement<HTMLButtonElement>(header, '[data-action="export"]');
   const importBtn = requireElement<HTMLButtonElement>(header, '[data-action="import"]');
   const importInput = requireElement<HTMLInputElement>(header, '[data-role="import-file"]');
@@ -80,9 +87,14 @@ export function Toolbar({
   );
   appendOptions(labelSelect, TAG_OPTIONS);
 
-  searchInput.addEventListener('input', () => {
-    store.setFilters({ search: searchInput.value });
-  });
+  // value last pushed to the store: lets `sync` tell typing apart from an external change
+  let pushedSearch = '';
+  const pushSearch = createDebounced((value: string) => {
+    pushedSearch = value;
+    store.setFilters({ search: value });
+  }, SEARCH_DEBOUNCE_MS);
+
+  searchInput.addEventListener('input', () => pushSearch(searchInput.value));
 
   prioritySelect.addEventListener('change', () => {
     const value = prioritySelect.value;
@@ -94,8 +106,19 @@ export function Toolbar({
   });
 
   clearFiltersBtn.addEventListener('click', () => {
+    pushSearch.cancel();
+    searchInput.value = '';
+    pushedSearch = '';
     store.clearFilters();
   });
+
+  const runHistory = (action: () => ReturnType<BoardStore['undo']>): void => {
+    const result = action();
+    if (!result.ok) onNotify(result.error.message, 'error');
+  };
+
+  undoBtn.addEventListener('click', () => runHistory(() => store.undo()));
+  redoBtn.addEventListener('click', () => runHistory(() => store.redo()));
 
   newTaskBtn.addEventListener('click', onNewTask);
   resetDemoBtn.addEventListener('click', onRequestResetDemo);
@@ -140,10 +163,16 @@ export function Toolbar({
     const filters = store.getFilters();
     const theme = store.getTheme();
 
-    if (searchInput.value !== filters.search) searchInput.value = filters.search;
+    if (filters.search !== pushedSearch) {
+      pushSearch.cancel();
+      pushedSearch = filters.search;
+      searchInput.value = filters.search;
+    }
     prioritySelect.value = filters.priority;
     labelSelect.value = filters.tag;
 
+    undoBtn.disabled = !store.canUndo();
+    redoBtn.disabled = !store.canRedo();
     clearFiltersBtn.hidden = !store.hasActiveFilters();
     themeBtn.textContent = theme === 'dark' ? 'Tema claro' : 'Tema oscuro';
   };

@@ -1,5 +1,5 @@
 import type { BoardState, Result } from '../domain/index.ts';
-import { isPersistedBoardEnvelope } from './guards.ts';
+import { isPersistedBoardEnvelope, sanitizeBoard } from './guards.ts';
 import { extractLegacyTheme, migrateLegacyBoard } from './legacy.ts';
 import { migrateBoardPayload } from './migrations.ts';
 import { err } from './result.ts';
@@ -170,7 +170,7 @@ export function createLocalStorageBoardRepository(
       return recover('recovered_from_corruption', CORRUPTION_WARNING);
     }
     if (isPersistedBoardEnvelope(parsed.value)) {
-      return { status: 'loaded', board: parsed.value.board };
+      return { status: 'loaded', board: sanitizeBoard(parsed.value.board) };
     }
     const migrated = migrateBoardPayload(parsed.value);
     return migrated.ok
