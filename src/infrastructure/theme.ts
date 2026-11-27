@@ -12,6 +12,15 @@ export interface ThemeRepository {
   save(theme: ThemeValue): void;
 }
 
+/** Initial theme when nothing was saved: follows the OS preference, `light` if unknown. */
+function systemTheme(): ThemeValue {
+  try {
+    return globalThis.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  } catch {
+    return 'light';
+  }
+}
+
 /**
  * Stores a theme carried over from the MVP, only when no preference exists yet.
  * Returns whether the value is now persisted under `storageKey`.
@@ -50,7 +59,7 @@ export function createLocalStorageThemeRepository(
     load() {
       try {
         if (storage === null) {
-          return 'light';
+          return systemTheme();
         }
         const stored = storage.getItem(storageKey);
         if (stored !== null) {
@@ -58,7 +67,7 @@ export function createLocalStorageThemeRepository(
         }
         const legacy = readLegacyTheme(storage);
         if (legacy === null) {
-          return 'light';
+          return systemTheme();
         }
         adoptLegacyTheme(storage, storageKey, legacy);
         return legacy;

@@ -6,7 +6,7 @@ import {
   importBoardFromJson,
 } from './infrastructure/index.ts';
 import { App } from './ui/App.ts';
-import './ui/style.css';
+import './ui/styles/index.css';
 
 // Composition root: the only place where concrete infrastructure meets the application.
 const store = createBoardStore({

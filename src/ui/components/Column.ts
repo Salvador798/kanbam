@@ -1,59 +1,92 @@
-import type { ColumnDefinition, Task } from '../../domain/index.ts';
+import type { ColumnDefinition, Task, WipEvaluation } from '../../domain/index.ts';
+import type { MoveAction } from '../interaction/index.ts';
+import { el } from '../utils/dom.ts';
+import { getWipView } from '../view-model.ts';
 import { TaskCard } from './TaskCard.ts';
 
 export interface ColumnProps {
   column: ColumnDefinition;
   tasks: readonly Task[];
+  wip: WipEvaluation;
   hasActiveFilters: boolean;
   onEditTask: (task: Task) => void;
   onDeleteTask: (task: Task) => void;
+  getMoves?: (task: Task) => Readonly<Record<MoveAction, boolean>>;
+}
+
+function WipIndicator(wip: WipEvaluation): HTMLElement | null {
+  const view = getWipView(wip);
+  if (view === null) return null;
+
+  const indicator = el(
+    'span',
+    {
+      className: view.warning ? 'wip-indicator is-warning' : 'wip-indicator',
+      attrs: { 'aria-label': view.ariaLabel, role: 'img' },
+    },
+    el('span', { text: `WIP ${view.text}`, attrs: { 'aria-hidden': 'true' } }),
+  );
+  if (view.statusText !== null) {
+    indicator.append(el('span', { className: 'wip-status', text: view.statusText, attrs: { 'aria-hidden': 'true' } }));
+  }
+  indicator.dataset.wipStatus = wip.status;
+  return indicator;
 }
 
 export function Column({
   column,
   tasks,
+  wip,
   hasActiveFilters,
   onEditTask,
   onDeleteTask,
+  getMoves,
 }: ColumnProps): HTMLElement {
-  const section = document.createElement('section');
-  section.className = 'column';
+  const titleId = `column-title-${column.id}`;
+
+  const section = el('section', { className: 'column', attrs: { 'aria-labelledby': titleId } });
   section.dataset.columnId = column.id;
+  if (wip.isAtOrOverLimit) section.classList.add('is-wip-warning');
 
-  const dot = document.createElement('span');
-  dot.className = 'column-dot';
-  dot.setAttribute('aria-hidden', 'true');
+  const title = el('h2', { className: 'column-title', text: column.title, attrs: { id: titleId } });
+  const count = el('span', {
+    className: 'column-count',
+    text: String(tasks.length),
+    attrs: { 'aria-label': `${tasks.length} ${tasks.length === 1 ? 'tarjeta' : 'tarjetas'}` },
+  });
+  const titleGroup = el(
+    'div',
+    { className: 'column-title-group' },
+    el('span', { className: 'column-dot', attrs: { 'aria-hidden': 'true' } }),
+    title,
+    count,
+  );
 
-  const title = document.createElement('h2');
-  title.className = 'column-title';
-  title.textContent = column.title;
+  const header = el('div', { className: 'column-header' }, titleGroup);
+  const indicator = WipIndicator(wip);
+  if (indicator) header.append(indicator);
 
-  const count = document.createElement('span');
-  count.className = 'column-count';
-  count.textContent = String(tasks.length);
-
-  const titleGroup = document.createElement('div');
-  titleGroup.className = 'column-title-group';
-  titleGroup.append(dot, title, count);
-
-  const header = document.createElement('div');
-  header.className = 'column-header';
-  header.append(titleGroup);
-
-  const list = document.createElement('div');
-  list.className = 'column-list';
+  const list = el('div', { className: 'column-list' });
   list.dataset.columnId = column.id;
 
   if (tasks.length === 0) {
-    const empty = document.createElement('p');
-    empty.className = 'column-empty';
-    empty.textContent = hasActiveFilters
-      ? 'Sin coincidencias con los filtros'
-      : 'No hay tarjetas aquí';
-    list.append(empty);
+    list.append(
+      el('p', {
+        className: 'column-empty',
+        text: hasActiveFilters ? 'Sin coincidencias con los filtros' : 'No hay tarjetas aquí',
+      }),
+    );
   } else {
     list.append(
-      ...tasks.map((task) => TaskCard({ task, onEdit: onEditTask, onDelete: onDeleteTask })),
+      ...tasks.map((task) =>
+        TaskCard({
+          task,
+          columnTitle: column.title,
+          onEdit: onEditTask,
+          onDelete: onDeleteTask,
+          moves: getMoves?.(task),
+        }),
+      ),
     );
   }
 

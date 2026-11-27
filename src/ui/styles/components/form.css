@@ -1,0 +1,211 @@
+.input,
+.select,
+.textarea {
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 0.45rem 0.7rem;
+  font-size: 0.875rem;
+  min-height: 36px;
+  width: 100%;
+  min-width: 0;
+  transition: border-color var(--transition), background-color var(--transition);
+
+  &:hover {
+    border-color: var(--border-strong);
+  }
+
+  &:focus {
+    border-color: var(--accent);
+    background-color: var(--bg-surface);
+  }
+
+  &[aria-invalid='true'] {
+    border-color: var(--danger);
+  }
+
+  /* avoids the automatic zoom on iOS when focusing inputs */
+  @media (max-width: 768px) {
+    font-size: 16px;
+    min-height: 40px;
+  }
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 84px;
+}
+
+.select {
+  width: auto;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+  border: 0;
+  margin: 0;
+  padding: 0;
+
+  label,
+  .field-label,
+  legend {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    padding: 0;
+  }
+
+  .select {
+    width: 100%;
+  }
+}
+
+.field-error,
+.form-error {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--danger);
+
+  /* the leading mark keeps the error recognisable without relying on color */
+  &:not([hidden])::before {
+    content: '⚠ ';
+  }
+}
+
+[data-theme='dark'] .field-error,
+[data-theme='dark'] .form-error {
+  color: #fca5a5;
+}
+
+.field-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* tag chips and subtask checklist inside the task dialog */
+.tag-entry {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.chip-list,
+.subtask-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+
+  &:empty {
+    display: none;
+  }
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.1rem 0.15rem 0.1rem 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border-strong);
+  background-color: var(--bg-hover);
+
+  &.badge-label-ui {
+    background: var(--label-ui-bg);
+    color: var(--label-ui-text);
+    border-color: var(--label-ui-border);
+  }
+  &.badge-label-bug {
+    background: var(--label-bug-bg);
+    color: var(--label-bug-text);
+    border-color: var(--label-bug-border);
+  }
+  &.badge-label-feature {
+    background: var(--label-feature-bg);
+    color: var(--label-feature-text);
+    border-color: var(--label-feature-border);
+  }
+  &.badge-label-docs {
+    background: var(--label-docs-bg);
+    color: var(--label-docs-text);
+    border-color: var(--label-docs-border);
+  }
+}
+
+.chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 24px;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+
+  &:hover {
+    background-color: var(--bg-surface);
+  }
+}
+
+.tag-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+
+  &:empty {
+    display: none;
+  }
+}
+
+.subtasks {
+  gap: 0.5rem;
+}
+
+.subtask-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.subtask-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  input[type='checkbox'] {
+    width: 1.1rem;
+    height: 1.1rem;
+    flex-shrink: 0;
+    accent-color: var(--accent);
+  }
+
+  &.is-done .subtask-title {
+    text-decoration: line-through;
+    color: var(--text-muted);
+  }
+}

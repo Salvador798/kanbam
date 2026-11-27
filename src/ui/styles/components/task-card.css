@@ -1,0 +1,162 @@
+.task-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+  cursor: grab;
+  transition: border-color var(--transition), box-shadow var(--transition), opacity var(--transition);
+
+  &:hover {
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-md);
+  }
+
+  &:focus-visible {
+    border-color: var(--focus-ring);
+    outline-offset: 1px;
+  }
+
+  &.dragging {
+    opacity: 0.45;
+    cursor: grabbing;
+  }
+
+  .task-badges {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .task-title {
+    margin: 0;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    overflow-wrap: anywhere;
+  }
+
+  .task-desc {
+    margin: 0;
+    font-size: 0.83rem;
+    color: var(--text-secondary);
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .task-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .task-move {
+    display: flex;
+    gap: 0.2rem;
+    margin-right: auto;
+  }
+
+  .task-move-btn {
+    min-width: 2rem;
+    padding-inline: 0.4rem;
+  }
+
+  .task-footer {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.35rem;
+    padding-top: 0.4rem;
+    border-top: 1px solid var(--border-color);
+  }
+}
+
+.badge,
+.due-badge,
+.subtask-progress {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.12rem 0.45rem;
+  border-radius: var(--radius-xs);
+  border: 1px solid transparent;
+  letter-spacing: 0.01em;
+  overflow-wrap: anywhere;
+}
+
+.badge {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+  border-color: var(--border-strong);
+
+  &.badge-prio-high {
+    background: var(--prio-high-bg);
+    color: var(--prio-high-text);
+    border-color: var(--prio-high-border);
+  }
+  &.badge-prio-medium {
+    background: var(--prio-med-bg);
+    color: var(--prio-med-text);
+    border-color: var(--prio-med-border);
+  }
+  &.badge-prio-low {
+    background: var(--prio-low-bg);
+    color: var(--prio-low-text);
+    border-color: var(--prio-low-border);
+  }
+
+  &.badge-label-ui {
+    background: var(--label-ui-bg);
+    color: var(--label-ui-text);
+    border-color: var(--label-ui-border);
+  }
+  &.badge-label-bug {
+    background: var(--label-bug-bg);
+    color: var(--label-bug-text);
+    border-color: var(--label-bug-border);
+  }
+  &.badge-label-feature {
+    background: var(--label-feature-bg);
+    color: var(--label-feature-text);
+    border-color: var(--label-feature-border);
+  }
+  &.badge-label-docs {
+    background: var(--label-docs-bg);
+    color: var(--label-docs-text);
+    border-color: var(--label-docs-border);
+  }
+}
+
+.due-badge {
+  &.due-on_track {
+    background: var(--due-ok-bg);
+    color: var(--due-ok-text);
+    border-color: var(--due-ok-border);
+  }
+  &.due-due_soon {
+    background: var(--due-soon-bg);
+    color: var(--due-soon-text);
+    border-color: var(--due-soon-border);
+  }
+  &.due-overdue {
+    background: var(--due-over-bg);
+    color: var(--due-over-text);
+    border-color: var(--due-over-border);
+  }
+}
+
+.subtask-progress {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+  border-color: var(--border-color);
+}
