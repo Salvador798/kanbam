@@ -1,6 +1,6 @@
 import { DEFAULT_COLUMNS } from '../domain/index.ts';
 import type { Result } from '../domain/index.ts';
-import { isPersistedBoardEnvelope, isRecord } from './guards.ts';
+import { isPersistedBoardEnvelope, isRecord, sanitizeBoard } from './guards.ts';
 import { err, ok } from './result.ts';
 import { CURRENT_SCHEMA_VERSION } from './schema.ts';
 import type { PersistedBoardEnvelope, SchemaError } from './schema.ts';
@@ -62,5 +62,7 @@ export function migrateBoardPayload(payload: unknown): Result<PersistedBoardEnve
     (current, step) => step(current),
     payload,
   );
-  return isPersistedBoardEnvelope(migrated) ? ok(migrated) : err(invalidSchema());
+  return isPersistedBoardEnvelope(migrated)
+    ? ok({ ...migrated, board: sanitizeBoard(migrated.board) })
+    : err(invalidSchema());
 }

@@ -33,6 +33,10 @@ function hasUniqueIds(items: readonly { readonly id: string }[]): boolean {
   return new Set(items.map((item) => item.id)).size === items.length;
 }
 
+function hasUniqueOrderPerColumn(tasks: readonly Task[]): boolean {
+  return new Set(tasks.map((task) => `${task.columnId}:${task.order}`)).size === tasks.length;
+}
+
 export function isSubtask(value: unknown): value is Subtask {
   return (
     isRecord(value) &&
@@ -87,8 +91,38 @@ export function isBoardState(value: unknown): value is BoardState {
     hasUniqueIds(value.columns) &&
     Array.isArray(value.tasks) &&
     value.tasks.every(isTask) &&
-    hasUniqueIds(value.tasks)
+    hasUniqueIds(value.tasks) &&
+    hasUniqueOrderPerColumn(value.tasks)
   );
+}
+
+/** Rebuilds a validated board keeping only known fields, so unknown properties never leak in. */
+export function sanitizeBoard(board: BoardState): BoardState {
+  return {
+    columns: board.columns.map((column) => ({
+      id: column.id,
+      title: column.title,
+      order: column.order,
+      wipLimit: column.wipLimit,
+    })),
+    tasks: board.tasks.map((task) => ({
+      id: task.id,
+      title: task.title,
+      description: task.description,
+      columnId: task.columnId,
+      order: task.order,
+      priority: task.priority,
+      tags: [...task.tags],
+      dueDate: task.dueDate,
+      subtasks: task.subtasks.map((subtask) => ({
+        id: subtask.id,
+        title: subtask.title,
+        completed: subtask.completed,
+      })),
+      createdAt: task.createdAt,
+      updatedAt: task.updatedAt,
+    })),
+  };
 }
 
 export function isPersistedBoardEnvelope(value: unknown): value is PersistedBoardEnvelope {
