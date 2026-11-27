@@ -12,7 +12,7 @@ import type { DueDateStatus, Task, WipEvaluation } from '../domain/index.ts';
 export interface DueBadge {
   readonly status: Exclude<DueDateStatus, 'none'>;
   readonly label: string;
-  /** Visible text, e.g. "Vencida · 12/03/2026". */
+  /** Visible text, e.g. "Vencida el 12/03/2026". */
   readonly text: string;
 }
 
@@ -22,6 +22,12 @@ export function formatCalendarDate(value: string): string {
   return match ? `${match[3]}/${match[2]}/${match[1]}` : value;
 }
 
+const DUE_TEXT_PREFIX: Readonly<Record<Exclude<DueDateStatus, 'none'>, string>> = {
+  overdue: 'Vencida el',
+  due_soon: 'Vence pronto el',
+  on_track: 'Vence el',
+};
+
 export function getDueBadge(dueDate: string | null, referenceDate?: Date): DueBadge | null {
   if (dueDate === null) return null;
   const evaluation = getDueDateEvaluation(dueDate, referenceDate);
@@ -29,7 +35,7 @@ export function getDueBadge(dueDate: string | null, referenceDate?: Date): DueBa
   return {
     status: evaluation.status,
     label: evaluation.label,
-    text: `${evaluation.label} · ${formatCalendarDate(dueDate)}`,
+    text: `${DUE_TEXT_PREFIX[evaluation.status]} ${formatCalendarDate(dueDate)}`,
   };
 }
 
@@ -43,7 +49,7 @@ export interface WipView {
 
 export function getWipView(evaluation: WipEvaluation): WipView | null {
   if (evaluation.limit === null) return null;
-  const text = `${evaluation.count}/${evaluation.limit}`;
+  const text = `${evaluation.count} de ${evaluation.limit}`;
   const base = `Límite WIP: ${evaluation.count} de ${evaluation.limit}`;
   if (evaluation.status === 'exceeded') {
     return { text, warning: true, statusText: 'Excedido', ariaLabel: `${base}, límite excedido` };

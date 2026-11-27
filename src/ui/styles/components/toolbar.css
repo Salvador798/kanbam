@@ -1,113 +1,142 @@
-/* top bar */
+/* header: wordmark, search, filters, history, primary action, overflow menu */
 .toolbar {
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  padding: 0.75rem 1rem;
-  box-shadow: var(--shadow-sm);
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
+  position: relative;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--rule);
 
-  .toolbar-brand {
-    display: flex;
-    align-items: center;
-    gap: 0.55rem;
-
-    .brand-mark {
-      width: 10px;
-      height: 10px;
-      border-radius: 3px;
-      background-color: var(--btn-primary-bg);
-      flex-shrink: 0;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: clamp(1.05rem, 2.2vw, 1.2rem);
-      font-weight: 700;
-      letter-spacing: -0.02em;
-    }
+  .toolbar-brand h1 {
+    margin: 0;
+    margin-right: 0.5rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
   }
 
-  .toolbar-filters {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem;
-    flex: 1 1 320px;
+  .toolbar-search {
     min-width: 0;
   }
 
-  .toolbar-actions {
+  .toolbar-history {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
+    gap: 0.125rem;
+  }
+
+  .filter-count {
+    font-variant-numeric: tabular-nums;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    min-width: 1.25rem;
+    padding: 0 0.3rem;
+    border-radius: 999px;
+    background-color: var(--cobalt);
+    color: var(--on-cobalt);
+    line-height: 1.25rem;
+    text-align: center;
+
+    &[hidden] {
+      display: none;
+    }
+  }
+
+  /* grid areas place items; DOM order is the mobile visual order (row 1 then row 2) */
+  display: grid;
+  grid-template-columns: auto minmax(0, 28rem) auto auto minmax(0, 1fr) auto auto;
+  grid-template-areas: 'brand search filters history . new more';
+  align-items: center;
+  column-gap: 0.75rem;
+
+  .toolbar-brand {
+    grid-area: brand;
+  }
+
+  .toolbar-search {
+    grid-area: search;
+  }
+
+  .toolbar-filters {
+    grid-area: filters;
+  }
+
+  .toolbar-history {
+    grid-area: history;
+  }
+
+  .toolbar-new {
+    grid-area: new;
+  }
+
+  .toolbar-menu {
+    grid-area: more;
+  }
+
+  @media (max-width: 719px) {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      'brand new more'
+      'search filters history';
     gap: 0.5rem;
-  }
+    padding-bottom: 0.75rem;
 
-  @media (max-width: 768px) {
-    padding: 0.75rem;
-
-    .toolbar-brand {
-      width: 100%;
-    }
-
-    .toolbar-filters {
-      width: 100%;
-      flex: 1 1 100%;
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 0.5rem;
-
-      .search-input {
-        grid-column: 1 / -1;
-        max-width: none;
-        width: 100%;
-      }
-
-      .select {
-        width: 100%;
-      }
-
-      [data-action='clear-filters'] {
-        grid-column: 1 / -1;
-        justify-self: start;
-      }
-    }
-
-    .toolbar-actions {
-      width: 100%;
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 0.5rem;
-
-      .btn-primary {
-        grid-column: 1 / -1;
-      }
-
-      .btn {
-        width: 100%;
-        min-height: 40px;
-      }
-    }
-  }
-
-  @media (max-width: 380px) {
-    padding: 0.65rem;
-
-    .toolbar-filters,
-    .toolbar-actions {
-      grid-template-columns: 1fr;
+    .toolbar-search {
+      max-width: none;
     }
   }
 }
 
-
 .search-input {
-  min-width: 180px;
-  flex: 1 1 200px;
-  max-width: 280px;
+  width: 100%;
+}
+
+/* shared disclosure: trigger button plus a floating panel */
+.disclosure {
+  position: relative;
+
+  @media (max-width: 719px) {
+    &.toolbar-filters {
+      position: static;
+    }
+  }
+}
+
+.disclosure-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  z-index: 20;
+  min-width: 14rem;
+  padding: 0.75rem;
+  background-color: var(--surface);
+  border: 1px solid var(--field-edge);
+  border-radius: var(--radius-dialog);
+
+  &:not([hidden]) {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &[hidden] {
+    display: none;
+  }
+
+  &.filters-panel {
+    left: 0;
+    gap: 0.5rem;
+    width: 17rem;
+
+    @media (max-width: 719px) {
+      left: 0;
+      right: 0;
+      width: auto;
+    }
+  }
+
+  &.menu-panel {
+    right: 0;
+    padding: 0.375rem;
+
+    .menu-item {
+      justify-content: flex-start;
+      width: 100%;
+    }
+  }
 }

@@ -14,25 +14,6 @@ export interface ColumnProps {
   getMoves?: (task: Task) => Readonly<Record<MoveAction, boolean>>;
 }
 
-function WipIndicator(wip: WipEvaluation): HTMLElement | null {
-  const view = getWipView(wip);
-  if (view === null) return null;
-
-  const indicator = el(
-    'span',
-    {
-      className: view.warning ? 'wip-indicator is-warning' : 'wip-indicator',
-      attrs: { 'aria-label': view.ariaLabel, role: 'img' },
-    },
-    el('span', { text: `WIP ${view.text}`, attrs: { 'aria-hidden': 'true' } }),
-  );
-  if (view.statusText !== null) {
-    indicator.append(el('span', { className: 'wip-status', text: view.statusText, attrs: { 'aria-hidden': 'true' } }));
-  }
-  indicator.dataset.wipStatus = wip.status;
-  return indicator;
-}
-
 export function Column({
   column,
   tasks,
@@ -46,25 +27,35 @@ export function Column({
 
   const section = el('section', { className: 'column', attrs: { 'aria-labelledby': titleId } });
   section.dataset.columnId = column.id;
-  if (wip.isAtOrOverLimit) section.classList.add('is-wip-warning');
+  section.dataset.wipStatus = wip.status;
 
   const title = el('h2', { className: 'column-title', text: column.title, attrs: { id: titleId } });
-  const count = el('span', {
-    className: 'column-count',
-    text: String(tasks.length),
-    attrs: { 'aria-label': `${tasks.length} ${tasks.length === 1 ? 'tarjeta' : 'tarjetas'}` },
+  const view = getWipView(wip);
+
+  // one accessible name for the whole counter; the visible parts are decorative duplicates
+  const countLabel = `${tasks.length} ${tasks.length === 1 ? 'tarjeta' : 'tarjetas'}`;
+  const meta = el('span', {
+    className: 'column-meta',
+    attrs: { role: 'img', 'aria-label': view?.ariaLabel ?? countLabel },
   });
-  const titleGroup = el(
-    'div',
-    { className: 'column-title-group' },
-    el('span', { className: 'column-dot', attrs: { 'aria-hidden': 'true' } }),
-    title,
-    count,
+  if (view !== null && view.statusText !== null) {
+    meta.append(el('span', { className: 'wip-status', text: view.statusText, attrs: { 'aria-hidden': 'true' } }));
+  }
+  meta.append(
+    el('span', {
+      className: 'column-count',
+      text: view === null ? String(tasks.length) : view.text,
+      attrs: { 'aria-hidden': 'true' },
+    }),
   );
 
-  const header = el('div', { className: 'column-header' }, titleGroup);
-  const indicator = WipIndicator(wip);
-  if (indicator) header.append(indicator);
+  const header = el('div', { className: 'column-header' }, title, meta);
+
+  const fill = el('span', { className: 'capacity-fill' });
+  if (wip.limit !== null) {
+    fill.style.setProperty('--fill', String(Math.min(1, wip.count / wip.limit)));
+  }
+  const capacity = el('div', { className: 'capacity', attrs: { 'aria-hidden': 'true' } }, fill);
 
   const list = el('div', { className: 'column-list' });
   list.dataset.columnId = column.id;
@@ -73,7 +64,9 @@ export function Column({
     list.append(
       el('p', {
         className: 'column-empty',
-        text: hasActiveFilters ? 'Sin coincidencias con los filtros' : 'No hay tarjetas aquí',
+        text: hasActiveFilters
+          ? 'Sin coincidencias con los filtros.'
+          : 'Sin tarjetas. Arrastra una aquí o crea una nueva.',
       }),
     );
   } else {
@@ -90,6 +83,6 @@ export function Column({
     );
   }
 
-  section.append(header, list);
+  section.append(header, capacity, list);
   return section;
 }

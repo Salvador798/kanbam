@@ -37,7 +37,9 @@ describe('getDueBadge', () => {
   });
 
   it('includes the formatted date in the visible text', () => {
-    expect(getDueBadge('2026-03-09', TODAY)?.text).toBe('Vencida · 09/03/2026');
+    expect(getDueBadge('2026-03-09', TODAY)?.text).toBe('Vencida el 09/03/2026');
+    expect(getDueBadge('2026-03-12', TODAY)?.text).toBe('Vence pronto el 12/03/2026');
+    expect(getDueBadge('2026-04-30', TODAY)?.text).toBe('Vence el 30/04/2026');
   });
 });
 
@@ -57,17 +59,17 @@ describe('getWipView', () => {
 
   it('shows count/limit without warning while within the limit', () => {
     const view = getWipView({ ...wip.in_progress, count: 1, status: 'within_limit', isAtOrOverLimit: false });
-    expect(view).toMatchObject({ text: '1/3', warning: false, statusText: null });
+    expect(view).toMatchObject({ text: '1 de 3', warning: false, statusText: null });
   });
 
   it('warns with text at and over the limit', () => {
     expect(getWipView({ ...wip.in_progress, count: 3, status: 'at_limit', isAtOrOverLimit: true })).toMatchObject({
-      text: '3/3',
+      text: '3 de 3',
       warning: true,
       statusText: 'Al límite',
     });
     const over = getWipView({ ...wip.in_progress, count: 4, status: 'exceeded', isAtOrOverLimit: true });
-    expect(over).toMatchObject({ text: '4/3', warning: true, statusText: 'Excedido' });
+    expect(over).toMatchObject({ text: '4 de 3', warning: true, statusText: 'Excedido' });
     expect(over?.ariaLabel).toContain('excedido');
   });
 });

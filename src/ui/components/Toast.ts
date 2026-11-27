@@ -69,7 +69,7 @@ export function createToast(): ToastHandle {
     const { actionLabel, onAction } = options;
     if (actionLabel !== undefined && onAction !== undefined) {
       const action = el('button', {
-        className: 'btn btn-sm toast-action',
+        className: 'toast-action',
         text: actionLabel,
         attrs: { type: 'button' },
       });

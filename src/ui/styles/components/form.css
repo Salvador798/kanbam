@@ -1,27 +1,31 @@
 .input,
 .select,
 .textarea {
-  background-color: var(--bg-input);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
+  background-color: var(--surface);
+  border: 1px solid var(--field-edge);
+  border-radius: 6px;
   padding: 0.45rem 0.7rem;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   min-height: 36px;
   width: 100%;
   min-width: 0;
-  transition: border-color var(--transition), background-color var(--transition);
+  transition: border-color var(--dur) ease;
 
   &:hover {
-    border-color: var(--border-strong);
+    border-color: var(--graphite);
   }
 
   &:focus {
-    border-color: var(--accent);
-    background-color: var(--bg-surface);
+    border-color: var(--cobalt);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--cobalt);
+    outline-offset: 1px;
   }
 
   &[aria-invalid='true'] {
-    border-color: var(--danger);
+    border-color: var(--brick);
   }
 
   /* avoids the automatic zoom on iOS when focusing inputs */
@@ -52,9 +56,9 @@
   label,
   .field-label,
   legend {
-    font-size: 0.82rem;
+    font-size: 0.8125rem;
     font-weight: 500;
-    color: var(--text-secondary);
+    color: var(--graphite);
     padding: 0;
   }
 
@@ -66,9 +70,9 @@
 .field-error,
 .form-error {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   font-weight: 500;
-  color: var(--danger);
+  color: var(--brick);
 
   /* the leading mark keeps the error recognisable without relying on color */
   &:not([hidden])::before {
@@ -76,14 +80,9 @@
   }
 }
 
-[data-theme='dark'] .field-error,
-[data-theme='dark'] .form-error {
-  color: #fca5a5;
-}
-
 .field-hint {
-  font-size: 0.78rem;
-  color: var(--text-muted);
+  font-size: 0.8125rem;
+  color: var(--graphite);
 }
 
 .form-row {
@@ -91,7 +90,7 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
 
-  @media (max-width: 640px) {
+  @media (max-width: 719px) {
     grid-template-columns: 1fr;
   }
 }
@@ -124,33 +123,10 @@
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  padding: 0.1rem 0.15rem 0.1rem 0.5rem;
-  font-size: 0.78rem;
-  font-weight: 600;
-  border-radius: var(--radius-xs);
-  border: 1px solid var(--border-strong);
-  background-color: var(--bg-hover);
-
-  &.badge-label-ui {
-    background: var(--label-ui-bg);
-    color: var(--label-ui-text);
-    border-color: var(--label-ui-border);
-  }
-  &.badge-label-bug {
-    background: var(--label-bug-bg);
-    color: var(--label-bug-text);
-    border-color: var(--label-bug-border);
-  }
-  &.badge-label-feature {
-    background: var(--label-feature-bg);
-    color: var(--label-feature-text);
-    border-color: var(--label-feature-border);
-  }
-  &.badge-label-docs {
-    background: var(--label-docs-bg);
-    color: var(--label-docs-text);
-    border-color: var(--label-docs-border);
-  }
+  padding: 0 0.15rem 0 0.6rem;
+  font-size: 0.8125rem;
+  border-radius: 999px;
+  border: 1px solid var(--field-edge);
 }
 
 .chip-remove {
@@ -160,7 +136,7 @@
   min-width: 24px;
   min-height: 24px;
   border: 0;
-  border-radius: var(--radius-xs);
+  border-radius: 999px;
   background: transparent;
   color: inherit;
   cursor: pointer;
@@ -168,7 +144,7 @@
   line-height: 1;
 
   &:hover {
-    background-color: var(--bg-surface);
+    background-color: color-mix(in srgb, var(--ink) 10%, transparent);
   }
 }
 
@@ -201,11 +177,11 @@
     width: 1.1rem;
     height: 1.1rem;
     flex-shrink: 0;
-    accent-color: var(--accent);
+    accent-color: var(--cobalt);
   }
 
   &.is-done .subtask-title {
     text-decoration: line-through;
-    color: var(--text-muted);
+    color: var(--graphite);
   }
 }

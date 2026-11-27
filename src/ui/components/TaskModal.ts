@@ -18,7 +18,6 @@ import {
 import type { ColumnId, Subtask, Task } from '../../domain/index.ts';
 import { appendOptions, el, htmlToElement, requireElement, setFieldError } from '../utils/dom.ts';
 import { rememberFocus } from '../utils/focus.ts';
-import { tagBadgeClass } from '../utils/tags.ts';
 import { addTagsFromText, removeTag } from '../view-model.ts';
 
 export interface TaskModalHandle {
@@ -210,7 +209,7 @@ export function createTaskModal({ store, onSaved, onWarning }: TaskModalProps): 
         });
         return el(
           'li',
-          { className: `chip ${tagBadgeClass(tag)}`.trim() },
+          { className: 'chip' },
           el('span', { text: tag }),
           remove,
         );
