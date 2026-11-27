@@ -1,130 +1,131 @@
+/* lanes are open columns divided by 1px rules, never boxed */
 .column {
-  background-color: var(--bg-column);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  padding: 0.75rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   min-width: 0;
   min-height: 420px;
-  transition: border-color var(--transition), background-color var(--transition);
+  padding: 0 1rem;
+  border-left: 1px solid var(--rule);
+  scroll-snap-align: start;
+  transition: background-color var(--dur) ease;
 
-  &[data-column-id='todo'] .column-dot { background-color: var(--dot-todo); }
-  &[data-column-id='in_progress'] .column-dot { background-color: var(--dot-progress); }
-  &[data-column-id='in_review'] .column-dot { background-color: var(--dot-review); }
-  &[data-column-id='done'] .column-dot { background-color: var(--dot-done); }
-
-  &.drag-over {
-    border-color: var(--accent);
-    background-color: var(--accent-soft);
+  &:first-child {
+    padding-left: 0;
+    border-left: 0;
   }
 
-  &.is-wip-warning {
-    border-color: var(--warning-border);
+  &:last-child {
+    padding-right: 0;
+  }
+
+  &.drag-over {
+    background-color: var(--paper-deep);
   }
 
   .column-header {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-    padding: 0.1rem 0.15rem;
-  }
-
-  .column-title-group {
-    display: flex;
-    align-items: center;
-    gap: 0.45rem;
-    min-width: 0;
-  }
-
-  .column-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
+    gap: 0.5rem;
   }
 
   .column-title {
     margin: 0;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--text-primary);
+    font-size: 1.375rem;
+    font-weight: 500;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
   }
 
-  .column-count {
-    background-color: var(--bg-surface);
-    color: var(--text-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-xs);
-    font-size: 0.75rem;
-    font-weight: 600;
-    padding: 0.05rem 0.45rem;
+  .column-meta {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.5rem;
     flex-shrink: 0;
+    color: var(--graphite);
+    font-size: 0.9375rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .wip-status {
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+
+  /* 2px capacity bar; the state is always spelled out in text next to the count */
+  .capacity {
+    height: 2px;
+    background-color: var(--rule);
+
+    .capacity-fill {
+      display: block;
+      height: 100%;
+      width: calc(var(--fill, 0) * 100%);
+      background-color: var(--ink);
+    }
+  }
+
+  &[data-wip-status='at_limit'] {
+    .wip-status {
+      color: var(--amber);
+    }
+
+    .capacity-fill {
+      background-color: var(--amber);
+    }
+  }
+
+  &[data-wip-status='exceeded'] {
+    .wip-status {
+      color: var(--brick);
+    }
+
+    .capacity-fill {
+      background-color: var(--brick);
+    }
   }
 
   .column-list {
     display: flex;
     flex-direction: column;
-    gap: 0.6rem;
+    gap: 0.625rem;
     min-height: 120px;
     flex: 1;
   }
 
   .column-empty {
-    text-align: center;
-    padding: 1.5rem 0.75rem;
     margin: 0;
-    border: 1px dashed var(--border-strong);
-    border-radius: var(--radius-sm);
-    color: var(--text-muted);
-    font-size: 0.84rem;
+    padding: 0.5rem 0;
+    color: var(--graphite);
+    font-size: 0.9375rem;
   }
 
-  @media (max-width: 640px) {
-    min-height: auto;
-    padding: 0.65rem;
+  @media (max-width: 1099px) {
+    padding-right: 1rem;
+
+    &:last-child {
+      padding-right: 1rem;
+    }
+  }
+
+  @media (max-width: 719px) {
+    min-height: 0;
+    padding: 0 0.75rem;
+
+    &:first-child {
+      padding-left: 0;
+    }
 
     .column-list {
       min-height: 68px;
     }
-
-    .column-empty {
-      padding: 1rem 0.75rem;
-    }
-  }
-}
-
-/* WIP counter: the state is always spelled out in text, never color only */
-.wip-indicator {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  padding: 0.05rem 0.45rem;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-xs);
-  background-color: var(--bg-surface);
-
-  &.is-warning {
-    color: var(--warning-text);
-    background-color: var(--warning-bg);
-    border-color: var(--warning-border);
-  }
-
-  .wip-status::before {
-    content: '⚠ ';
   }
 }
 
 .drop-indicator {
   height: 2px;
-  border-radius: var(--radius-xs);
-  background-color: var(--accent);
+  background-color: var(--cobalt);
   pointer-events: none;
-  margin: 0.15rem 0;
+  margin: 0.125rem 0;
 }

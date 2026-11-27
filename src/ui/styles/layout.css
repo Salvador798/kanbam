@@ -2,37 +2,44 @@
   width: 100%;
   max-width: 1440px;
   margin: 0 auto;
-  padding: max(1rem, env(safe-area-inset-top)) max(1.25rem, env(safe-area-inset-right))
-    max(1.25rem, env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left));
+  padding: max(1rem, env(safe-area-inset-top)) max(1.5rem, env(safe-area-inset-right))
+    max(1.5rem, env(safe-area-inset-bottom)) max(1.5rem, env(safe-area-inset-left));
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.5rem;
 
-  @media (max-width: 640px) {
-    padding: max(0.75rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right))
-      max(1rem, env(safe-area-inset-bottom)) max(0.75rem, env(safe-area-inset-left));
-    gap: 0.75rem;
+  /* flex children must be allowed to shrink so the board scrolls instead of the page */
+  & > * {
+    min-width: 0;
   }
 
-  @media (max-width: 380px) {
-    padding: 0.5rem;
+  @media (max-width: 719px) {
+    padding: max(0.75rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right))
+      max(1rem, env(safe-area-inset-bottom)) max(0.75rem, env(safe-area-inset-left));
+    gap: 1rem;
   }
 }
 
-/* desktop: 4 columns; tablet: 2; mobile: stacked */
+/* desktop: four lanes divided by rules; narrower: lanes scroll inside the board only */
 .board {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.85rem;
-  align-items: start;
+  align-items: stretch;
+  min-width: 0;
 
-  @media (max-width: 1100px) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  @media (max-width: 1099px) {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 42%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 0;
+    padding-bottom: 0.5rem;
   }
 
-  @media (max-width: 640px) {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0.75rem;
+  @media (max-width: 719px) {
+    grid-auto-columns: 86vw;
   }
 }
 
@@ -49,20 +56,15 @@
 }
 
 .app-footer {
-  color: var(--text-secondary);
-  font-size: 0.85rem;
+  color: var(--graphite);
+  font-size: 0.8125rem;
 }
 
 .shortcuts-help {
   summary {
     cursor: pointer;
     width: fit-content;
-    border-radius: var(--radius-xs);
-
-    &:focus-visible {
-      outline: 2px solid var(--focus-ring);
-      outline-offset: 2px;
-    }
+    border-radius: 4px;
   }
 
   .shortcuts-list {
@@ -78,12 +80,12 @@
   }
 
   kbd {
-    padding: 0.05rem 0.4rem;
-    border: 1px solid var(--border-strong);
-    border-radius: var(--radius-xs);
-    background-color: var(--bg-surface);
-    color: var(--text-primary);
+    padding: 0 0.4rem;
+    border: 1px solid var(--field-edge);
+    border-radius: 4px;
+    background-color: var(--surface);
+    color: var(--ink);
     font: inherit;
-    font-size: 0.8rem;
+    font-size: 0.8125rem;
   }
 }

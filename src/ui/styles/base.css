@@ -11,12 +11,12 @@ html {
 body {
   margin: 0;
   font-family: var(--font-sans);
-  background-color: var(--bg-app);
-  color: var(--text-primary);
+  font-size: 0.9375rem;
+  background-color: var(--paper);
+  color: var(--ink);
   line-height: 1.5;
   min-height: 100dvh;
   overflow-x: hidden;
-  transition: background-color var(--transition), color var(--transition);
 }
 
 /* the modal dialog owns scrolling while it is open */
@@ -34,7 +34,7 @@ textarea {
 
 /* visible keyboard focus everywhere */
 :focus-visible {
-  outline: 2px solid var(--focus-ring);
+  outline: 2px solid var(--cobalt);
   outline-offset: 2px;
 }
 
