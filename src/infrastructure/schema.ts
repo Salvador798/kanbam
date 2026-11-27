@@ -2,6 +2,8 @@ import type { BoardState } from '../domain/index.ts';
 
 export const CURRENT_SCHEMA_VERSION = 2;
 export const BOARD_STORAGE_KEY = 'kanbam:board';
+/** Key used by the first (MVP) release; read-only source for the one-time migration. */
+export const LEGACY_BOARD_STORAGE_KEY = 'kanbam_board_v1';
 export const EXPORT_APP_ID = 'kanbam';
 
 export interface PersistedBoardEnvelope {

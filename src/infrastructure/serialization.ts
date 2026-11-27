@@ -1,5 +1,6 @@
 import type { BoardState, Result } from '../domain/index.ts';
 import { isRecord } from './guards.ts';
+import { migrateLegacyBoard } from './legacy.ts';
 import { migrateBoardPayload } from './migrations.ts';
 import { err, ok } from './result.ts';
 import { CURRENT_SCHEMA_VERSION, EXPORT_APP_ID } from './schema.ts';
@@ -26,12 +27,26 @@ function parseJson(raw: string): Result<unknown, SchemaError> {
   }
 }
 
+/** The MVP exported its raw state: `{ version, tasks, theme }` with no `app` marker. */
+function isLegacyExport(payload: unknown): boolean {
+  return (
+    isRecord(payload) &&
+    !('app' in payload) &&
+    !('schemaVersion' in payload) &&
+    Array.isArray(payload.tasks)
+  );
+}
+
 export function importBoardFromJson(raw: string): Result<BoardState, SchemaError> {
   const parsed = parseJson(raw);
   if (!parsed.ok) {
     return parsed;
   }
   const payload = parsed.value;
+  if (isLegacyExport(payload)) {
+    const legacy = migrateLegacyBoard(payload);
+    return legacy.ok ? ok(legacy.value.board) : legacy;
+  }
   if (!isRecord(payload) || payload.app !== EXPORT_APP_ID || !('schemaVersion' in payload)) {
     return err({
       code: 'INVALID_SCHEMA',

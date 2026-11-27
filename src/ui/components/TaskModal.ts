@@ -1,14 +1,8 @@
-import { store } from '../core/store.ts';
-import {
-  COLUMNS,
-  LABELS,
-  PRIORITIES,
-  type ColumnId,
-  type Priority,
-  type Task,
-  type TaskLabel,
-} from '../core/types.ts';
-import { escapeHtml, htmlToElement } from '../utils/dom.ts';
+import type { BoardStore } from '../../application/index.ts';
+import { PRIORITIES, PRIORITY_LABELS, isValidColumnId, isValidPriority } from '../../domain/index.ts';
+import type { ColumnId, Task } from '../../domain/index.ts';
+import { appendOptions, htmlToElement, requireElement } from '../utils/dom.ts';
+import { NO_TAG, TAG_OPTIONS } from '../utils/tags.ts';
 
 export interface TaskModalHandle {
   element: HTMLElement;
@@ -18,19 +12,14 @@ export interface TaskModalHandle {
   isOpen: () => boolean;
 }
 
-export function createTaskModal(onSaved?: (mode: 'create' | 'edit') => void): TaskModalHandle {
-  const priorityOptions = PRIORITIES.map(
-    (p) => `<option value="${p.value}">${escapeHtml(p.label)}</option>`,
-  ).join('');
+export interface TaskModalProps {
+  store: BoardStore;
+  onSaved?: (mode: 'create' | 'edit') => void;
+  /** Called when a change was applied in memory but could not be persisted. */
+  onWarning?: (message: string) => void;
+}
 
-  const labelOptions = LABELS.map(
-    (l) => `<option value="${l}">${escapeHtml(l)}</option>`,
-  ).join('');
-
-  const columnOptions = COLUMNS.map(
-    (c) => `<option value="${c.id}">${escapeHtml(c.title)}</option>`,
-  ).join('');
-
+export function createTaskModal({ store, onSaved, onWarning }: TaskModalProps): TaskModalHandle {
   const backdrop = htmlToElement(`
     <div class="modal-backdrop" aria-hidden="true">
       <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="task-modal-title">
@@ -72,14 +61,12 @@ export function createTaskModal(onSaved?: (mode: 'create' | 'edit') => void): Ta
             <div class="field">
               <label for="task-priority-input">Prioridad</label>
               <select id="task-priority-input" class="select" name="priority">
-                ${priorityOptions}
               </select>
             </div>
 
             <div class="field">
               <label for="task-label-input">Etiqueta</label>
               <select id="task-label-input" class="select" name="label">
-                ${labelOptions}
               </select>
             </div>
           </div>
@@ -87,7 +74,6 @@ export function createTaskModal(onSaved?: (mode: 'create' | 'edit') => void): Ta
           <div class="field">
             <label for="task-column-input">Columna</label>
             <select id="task-column-input" class="select" name="columnId">
-              ${columnOptions}
             </select>
           </div>
 
@@ -102,19 +88,29 @@ export function createTaskModal(onSaved?: (mode: 'create' | 'edit') => void): Ta
     </div>
   `);
 
-  const heading = backdrop.querySelector<HTMLHeadingElement>('#task-modal-title')!;
-  const form = backdrop.querySelector<HTMLFormElement>('form')!;
-  const titleInput = backdrop.querySelector<HTMLInputElement>('#task-title-input')!;
-  const descInput = backdrop.querySelector<HTMLTextAreaElement>('#task-desc-input')!;
-  const priorityInput = backdrop.querySelector<HTMLSelectElement>('#task-priority-input')!;
-  const labelInput = backdrop.querySelector<HTMLSelectElement>('#task-label-input')!;
-  const columnInput = backdrop.querySelector<HTMLSelectElement>('#task-column-input')!;
-  const titleError = backdrop.querySelector<HTMLSpanElement>('[data-role="title-error"]')!;
-  const submitBtn = backdrop.querySelector<HTMLButtonElement>('[data-role="submit-btn"]')!;
+  const heading = requireElement<HTMLHeadingElement>(backdrop, '#task-modal-title');
+  const form = requireElement<HTMLFormElement>(backdrop, 'form');
+  const titleInput = requireElement<HTMLInputElement>(backdrop, '#task-title-input');
+  const descInput = requireElement<HTMLTextAreaElement>(backdrop, '#task-desc-input');
+  const priorityInput = requireElement<HTMLSelectElement>(backdrop, '#task-priority-input');
+  const labelInput = requireElement<HTMLSelectElement>(backdrop, '#task-label-input');
+  const columnInput = requireElement<HTMLSelectElement>(backdrop, '#task-column-input');
+  const titleError = requireElement<HTMLSpanElement>(backdrop, '[data-role="title-error"]');
+  const submitBtn = requireElement<HTMLButtonElement>(backdrop, '[data-role="submit-btn"]');
+
+  appendOptions(
+    priorityInput,
+    PRIORITIES.map((value) => ({ value, label: PRIORITY_LABELS[value] })),
+  );
+  appendOptions(labelInput, [{ value: NO_TAG, label: 'Sin etiqueta' }, ...TAG_OPTIONS]);
+  appendOptions(
+    columnInput,
+    store.getColumns().map((column) => ({ value: column.id, label: column.title })),
+  );
 
   backdrop.inert = true;
 
-  let editingTaskId: string | null = null;
+  let editingTask: Task | null = null;
 
   const setOpen = (open: boolean) => {
     backdrop.classList.toggle('is-open', open);
@@ -127,14 +123,26 @@ export function createTaskModal(onSaved?: (mode: 'create' | 'edit') => void): Ta
     titleError.hidden = true;
   };
 
+  const showError = (message: string) => {
+    titleError.textContent = message;
+    titleError.hidden = false;
+  };
+
   const close = () => {
     setOpen(false);
-    editingTaskId = null;
+    editingTask = null;
     clearError();
   };
 
+  const syncTagOption = (tag: string) => {
+    // tasks loaded from imports can carry tags outside the suggestion list
+    if (tag !== NO_TAG && !Array.from(labelInput.options).some((option) => option.value === tag)) {
+      appendOptions(labelInput, [{ value: tag, label: tag }]);
+    }
+  };
+
   const openCreate = (defaultColumn: ColumnId = 'todo') => {
-    editingTaskId = null;
+    editingTask = null;
     heading.textContent = 'Nueva tarjeta';
     submitBtn.textContent = 'Crear tarjeta';
     form.reset();
@@ -147,13 +155,15 @@ export function createTaskModal(onSaved?: (mode: 'create' | 'edit') => void): Ta
   };
 
   const openEdit = (task: Task) => {
-    editingTaskId = task.id;
+    editingTask = task;
     heading.textContent = 'Editar tarjeta';
     submitBtn.textContent = 'Guardar cambios';
     titleInput.value = task.title;
     descInput.value = task.description;
     priorityInput.value = task.priority;
-    labelInput.value = task.label;
+    const primaryTag = task.tags[0] ?? NO_TAG;
+    syncTagOption(primaryTag);
+    labelInput.value = primaryTag;
     columnInput.value = task.columnId;
     clearError();
     setOpen(true);
@@ -175,26 +185,39 @@ export function createTaskModal(onSaved?: (mode: 'create' | 'edit') => void): Ta
 
     const title = titleInput.value.trim();
     if (!title) {
-      titleError.textContent = 'El título es obligatorio.';
-      titleError.hidden = false;
+      showError('El título es obligatorio.');
       titleInput.focus();
       return;
     }
 
+    const priority = priorityInput.value;
+    const columnId = columnInput.value;
+    if (!isValidPriority(priority) || !isValidColumnId(columnId)) return;
+
+    // the select edits the primary tag; any additional tags of the task are preserved
+    const selectedTag = labelInput.value;
+    const extraTags = (editingTask?.tags ?? []).slice(1).filter((tag) => tag !== selectedTag);
+    const tags = selectedTag === NO_TAG ? extraTags : [selectedTag, ...extraTags];
+
     const payload = {
       title,
       description: descInput.value.trim(),
-      priority: priorityInput.value as Priority,
-      label: labelInput.value as TaskLabel,
-      columnId: columnInput.value as ColumnId,
+      priority,
+      columnId,
+      tags,
     };
 
-    const mode: 'create' | 'edit' = editingTaskId ? 'edit' : 'create';
+    const mode: 'create' | 'edit' = editingTask ? 'edit' : 'create';
+    const result = editingTask ? store.updateTask(editingTask.id, payload) : store.addTask(payload);
 
-    if (editingTaskId) {
-      store.updateTask(editingTaskId, payload);
-    } else {
-      store.addTask(payload);
+    if (!result.ok) {
+      if (!result.error.applied) {
+        showError(result.error.message);
+        return;
+      }
+      close();
+      onWarning?.(result.error.message);
+      return;
     }
 
     close();
@@ -243,9 +266,9 @@ export function createConfirmModal(): ConfirmModalHandle {
 
   backdrop.inert = true;
 
-  const titleEl = backdrop.querySelector<HTMLHeadingElement>('#confirm-modal-title')!;
-  const messageEl = backdrop.querySelector<HTMLParagraphElement>('[data-role="message"]')!;
-  const confirmBtn = backdrop.querySelector<HTMLButtonElement>('[data-action="confirm"]')!;
+  const titleEl = requireElement<HTMLHeadingElement>(backdrop, '#confirm-modal-title');
+  const messageEl = requireElement<HTMLParagraphElement>(backdrop, '[data-role="message"]');
+  const confirmBtn = requireElement<HTMLButtonElement>(backdrop, '[data-action="confirm"]');
 
   let pendingConfirm: (() => void) | null = null;
 

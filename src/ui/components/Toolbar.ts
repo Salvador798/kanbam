@@ -1,9 +1,11 @@
-import { store } from '../core/store.ts';
-import { LABELS, PRIORITIES, type Priority, type TaskLabel } from '../core/types.ts';
-import { escapeHtml, htmlToElement } from '../utils/dom.ts';
+import type { BoardStore } from '../../application/index.ts';
+import { PRIORITIES, PRIORITY_LABELS, isValidPriority } from '../../domain/index.ts';
+import { appendOptions, htmlToElement, requireElement } from '../utils/dom.ts';
+import { TAG_OPTIONS } from '../utils/tags.ts';
 import type { ToastType } from './Toast.ts';
 
 export interface ToolbarProps {
+  store: BoardStore;
   onNewTask: () => void;
   onRequestResetDemo: () => void;
   onNotify: (message: string, type?: ToastType) => void;
@@ -15,18 +17,11 @@ export interface ToolbarHandle {
 }
 
 export function Toolbar({
+  store,
   onNewTask,
   onRequestResetDemo,
   onNotify,
 }: ToolbarProps): ToolbarHandle {
-  const priorityOptions = PRIORITIES.map(
-    (p) => `<option value="${p.value}">${escapeHtml(p.label)}</option>`,
-  ).join('');
-
-  const labelOptions = LABELS.map(
-    (l) => `<option value="${l}">${escapeHtml(l)}</option>`,
-  ).join('');
-
   const header = htmlToElement(`
     <header class="toolbar">
       <div class="toolbar-brand">
@@ -44,11 +39,9 @@ export function Toolbar({
         />
         <select class="select" data-role="priority" aria-label="Filtrar por prioridad">
           <option value="all">Prioridad: Todas</option>
-          ${priorityOptions}
         </select>
         <select class="select" data-role="label" aria-label="Filtrar por etiqueta">
           <option value="all">Etiqueta: Todas</option>
-          ${labelOptions}
         </select>
         <button class="btn btn-ghost btn-sm" type="button" data-action="clear-filters" hidden>
           Limpiar filtros
@@ -70,27 +63,34 @@ export function Toolbar({
     </header>
   `);
 
-  const searchInput = header.querySelector<HTMLInputElement>('[data-role="search"]')!;
-  const prioritySelect = header.querySelector<HTMLSelectElement>('[data-role="priority"]')!;
-  const labelSelect = header.querySelector<HTMLSelectElement>('[data-role="label"]')!;
-  const clearFiltersBtn = header.querySelector<HTMLButtonElement>('[data-action="clear-filters"]')!;
-  const newTaskBtn = header.querySelector<HTMLButtonElement>('[data-action="new-task"]')!;
-  const exportBtn = header.querySelector<HTMLButtonElement>('[data-action="export"]')!;
-  const importBtn = header.querySelector<HTMLButtonElement>('[data-action="import"]')!;
-  const importInput = header.querySelector<HTMLInputElement>('[data-role="import-file"]')!;
-  const resetDemoBtn = header.querySelector<HTMLButtonElement>('[data-action="reset-demo"]')!;
-  const themeBtn = header.querySelector<HTMLButtonElement>('[data-action="theme"]')!;
+  const searchInput = requireElement<HTMLInputElement>(header, '[data-role="search"]');
+  const prioritySelect = requireElement<HTMLSelectElement>(header, '[data-role="priority"]');
+  const labelSelect = requireElement<HTMLSelectElement>(header, '[data-role="label"]');
+  const clearFiltersBtn = requireElement<HTMLButtonElement>(header, '[data-action="clear-filters"]');
+  const newTaskBtn = requireElement<HTMLButtonElement>(header, '[data-action="new-task"]');
+  const exportBtn = requireElement<HTMLButtonElement>(header, '[data-action="export"]');
+  const importBtn = requireElement<HTMLButtonElement>(header, '[data-action="import"]');
+  const importInput = requireElement<HTMLInputElement>(header, '[data-role="import-file"]');
+  const resetDemoBtn = requireElement<HTMLButtonElement>(header, '[data-action="reset-demo"]');
+  const themeBtn = requireElement<HTMLButtonElement>(header, '[data-action="theme"]');
+
+  appendOptions(
+    prioritySelect,
+    PRIORITIES.map((value) => ({ value, label: PRIORITY_LABELS[value] })),
+  );
+  appendOptions(labelSelect, TAG_OPTIONS);
 
   searchInput.addEventListener('input', () => {
     store.setFilters({ search: searchInput.value });
   });
 
   prioritySelect.addEventListener('change', () => {
-    store.setFilters({ priority: prioritySelect.value as Priority | 'all' });
+    const value = prioritySelect.value;
+    store.setFilters({ priority: isValidPriority(value) ? value : 'all' });
   });
 
   labelSelect.addEventListener('change', () => {
-    store.setFilters({ label: labelSelect.value as TaskLabel | 'all' });
+    store.setFilters({ tag: labelSelect.value });
   });
 
   clearFiltersBtn.addEventListener('click', () => {
@@ -124,10 +124,10 @@ export function Toolbar({
     try {
       const text = await file.text();
       const imported = store.importJson(text);
-      if (imported) {
+      if (imported.ok) {
         onNotify('Tablero importado.', 'success');
       } else {
-        onNotify('El archivo JSON no tiene un formato válido.', 'error');
+        onNotify(imported.error.message, 'error');
       }
     } catch {
       onNotify('No se pudo leer el archivo.', 'error');
@@ -138,11 +138,11 @@ export function Toolbar({
 
   const sync = () => {
     const filters = store.getFilters();
-    const theme = store.getState().theme;
+    const theme = store.getTheme();
 
     if (searchInput.value !== filters.search) searchInput.value = filters.search;
     prioritySelect.value = filters.priority;
-    labelSelect.value = filters.label;
+    labelSelect.value = filters.tag;
 
     clearFiltersBtn.hidden = !store.hasActiveFilters();
     themeBtn.textContent = theme === 'dark' ? 'Tema claro' : 'Tema oscuro';
