@@ -1,6 +1,11 @@
 import { createDebounced } from '../../application/index.ts';
 import type { BoardStore } from '../../application/index.ts';
-import { PRIORITIES, PRIORITY_LABELS, isValidPriority } from '../../domain/index.ts';
+import {
+  DUE_DATE_STATUS_LABELS,
+  PRIORITIES,
+  PRIORITY_LABELS,
+  isValidPriority,
+} from '../../domain/index.ts';
 import { appendOptions, htmlToElement, requireElement } from '../utils/dom.ts';
 import { TAG_OPTIONS } from '../utils/tags.ts';
 import type { ToastType } from './Toast.ts';
@@ -18,6 +23,11 @@ export interface ToolbarHandle {
 }
 
 const SEARCH_DEBOUNCE_MS = 250;
+const DUE_FILTER_STATUSES = ['on_track', 'due_soon', 'overdue', 'none'] as const;
+
+function isDueFilterStatus(value: string): value is (typeof DUE_FILTER_STATUSES)[number] {
+  return (DUE_FILTER_STATUSES as readonly string[]).includes(value);
+}
 
 export function Toolbar({
   store,
@@ -46,6 +56,9 @@ export function Toolbar({
         <select class="select" data-role="label" aria-label="Filtrar por etiqueta">
           <option value="all">Etiqueta: Todas</option>
         </select>
+        <select class="select" data-role="due" aria-label="Filtrar por fecha límite">
+          <option value="all">Fecha límite: Todas</option>
+        </select>
         <button class="btn btn-ghost btn-sm" type="button" data-action="clear-filters" hidden>
           Limpiar filtros
         </button>
@@ -71,6 +84,7 @@ export function Toolbar({
   const searchInput = requireElement<HTMLInputElement>(header, '[data-role="search"]');
   const prioritySelect = requireElement<HTMLSelectElement>(header, '[data-role="priority"]');
   const labelSelect = requireElement<HTMLSelectElement>(header, '[data-role="label"]');
+  const dueSelect = requireElement<HTMLSelectElement>(header, '[data-role="due"]');
   const clearFiltersBtn = requireElement<HTMLButtonElement>(header, '[data-action="clear-filters"]');
   const newTaskBtn = requireElement<HTMLButtonElement>(header, '[data-action="new-task"]');
   const undoBtn = requireElement<HTMLButtonElement>(header, '[data-action="undo"]');
@@ -86,6 +100,10 @@ export function Toolbar({
     PRIORITIES.map((value) => ({ value, label: PRIORITY_LABELS[value] })),
   );
   appendOptions(labelSelect, TAG_OPTIONS);
+  appendOptions(
+    dueSelect,
+    DUE_FILTER_STATUSES.map((value) => ({ value, label: DUE_DATE_STATUS_LABELS[value] })),
+  );
 
   // value last pushed to the store: lets `sync` tell typing apart from an external change
   let pushedSearch = '';
@@ -103,6 +121,11 @@ export function Toolbar({
 
   labelSelect.addEventListener('change', () => {
     store.setFilters({ tag: labelSelect.value });
+  });
+
+  dueSelect.addEventListener('change', () => {
+    const value = dueSelect.value;
+    store.setFilters({ dueStatus: isDueFilterStatus(value) ? value : 'all' });
   });
 
   clearFiltersBtn.addEventListener('click', () => {
@@ -170,6 +193,7 @@ export function Toolbar({
     }
     prioritySelect.value = filters.priority;
     labelSelect.value = filters.tag;
+    dueSelect.value = filters.dueStatus;
 
     undoBtn.disabled = !store.canUndo();
     redoBtn.disabled = !store.canRedo();

@@ -28,3 +28,44 @@ export function requireElement<T extends Element>(root: ParentNode, selector: st
   }
   return element;
 }
+
+export interface ElementOptions {
+  readonly className?: string;
+  readonly text?: string;
+  readonly attrs?: Readonly<Record<string, string>>;
+}
+
+/** Builds an element with `textContent` only: user data never goes through innerHTML. */
+export function el<K extends keyof HTMLElementTagNameMap>(
+  tag: K,
+  options: ElementOptions = {},
+  ...children: readonly (Node | string)[]
+): HTMLElementTagNameMap[K] {
+  const element = document.createElement(tag);
+  if (options.className !== undefined) element.className = options.className;
+  if (options.text !== undefined) element.textContent = options.text;
+  for (const [name, value] of Object.entries(options.attrs ?? {})) {
+    element.setAttribute(name, value);
+  }
+  element.append(...children);
+  return element;
+}
+
+/** Shows or clears an inline field error, keeping `aria-invalid` / `aria-describedby` in sync. */
+export function setFieldError(
+  control: HTMLElement,
+  errorElement: HTMLElement,
+  message: string | null,
+): void {
+  if (message === null) {
+    errorElement.textContent = '';
+    errorElement.hidden = true;
+    control.removeAttribute('aria-invalid');
+    control.removeAttribute('aria-describedby');
+    return;
+  }
+  errorElement.textContent = message;
+  errorElement.hidden = false;
+  control.setAttribute('aria-invalid', 'true');
+  control.setAttribute('aria-describedby', errorElement.id);
+}
